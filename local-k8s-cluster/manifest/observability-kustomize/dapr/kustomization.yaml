@@ -1,0 +1,6 @@
+namespace: dapr-system
+
+resources:
+  - namespace.yaml
+  - raw/dapr.yaml
+  - raw/dapr-ingress.yaml

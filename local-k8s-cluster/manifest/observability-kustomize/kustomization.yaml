@@ -1,0 +1,4 @@
+bases:
+  - "./observability"
+  - "./dapr"
+  - "./default"

@@ -1,0 +1,5 @@
+namespace: default
+
+resources:
+  - raw/dapr-appconfig.yaml
+  - raw/dapr-redis-statestore.yaml

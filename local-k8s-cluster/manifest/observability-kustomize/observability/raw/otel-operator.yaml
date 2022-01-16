@@ -1,0 +1,11 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: otel-operator
+spec:
+  components:
+  - name: otel-operator
+    type: helm
+    properties:
+      chart: opentelemetry-operator
+      url: https://open-telemetry.github.io/opentelemetry-helm-charts

@@ -1,0 +1,26 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: loki-stack
+spec:
+  components:
+  - name: loki-stack
+    type: helm
+    properties:
+      chart: loki-stack
+      url: https://grafana.github.io/helm-charts
+      # check docs: https://github.com/grafana/helm-charts/blob/main/charts/loki-stack/values.yaml
+      values:
+        loki:
+          enabled: true
+          # check docs: https://github.com/grafana/helm-charts/blob/main/charts/loki/values.yaml
+        promtail:
+          # check docs: https://github.com/grafana/helm-charts/blob/main/charts/promtail/values.yaml
+          # enabled: true
+          enabled: false
+        fluent-bit:
+          # check docs: https://github.com/grafana/helm-charts/blob/main/charts/fluent-bit/values.yaml
+          enabled: true
+          # enabled: false
+        grafana:
+          enabled: false

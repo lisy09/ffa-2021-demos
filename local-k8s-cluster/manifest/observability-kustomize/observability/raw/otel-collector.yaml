@@ -1,0 +1,158 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: otel-collector
+spec:
+  components:
+  - name: otel-collector
+    type: raw
+    properties:
+      apiVersion: opentelemetry.io/v1alpha1
+      kind: OpenTelemetryCollector
+      metadata:
+        name: my-otel-collector
+      spec:
+        mode: statefulset
+        replicas: 1
+        config: |
+          # check here for otel config: https://opentelemetry.io/docs/collector/configuration/
+          receivers:
+            zipkin:
+              endpoint: 0.0.0.0:9411
+          extensions:
+            health_check:
+            pprof:
+            zpages:
+          processors:
+
+          exporters:
+            logging:
+            jaeger:
+              endpoint: jaeger-collector:14250
+              tls:
+                insecure: true
+
+
+          service:
+            extensions: [pprof, zpages, health_check]
+            pipelines:
+              traces:
+                receivers: [zipkin]
+                # processors: []
+                exporters:
+                  - logging
+                  - jaeger
+
+
+      # apiVersion: v1
+      # kind: ConfigMap
+      # metadata:
+      #   name: otel-collector-conf
+      #   labels:
+      #     app: opentelemetry
+      #     component: otel-collector-conf
+      # data:
+      #   otel-collector-config: |
+      #     receivers:
+      #       zipkin:
+      #         endpoint: 0.0.0.0:9411
+      #     extensions:
+      #       health_check:
+      #       pprof:
+      #         endpoint: :1888
+      #       zpages:
+      #         endpoint: :55679
+      #     exporters:
+      #       logging:
+      #         loglevel: debug
+      #       # Depending on where you want to export your trace, use the
+      #       # correct OpenTelemetry trace exporter here.
+      #       #
+      #       # Refer to
+      #       # https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter
+      #       # and
+      #       # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter
+      #       # for full lists of trace exporters that you can use, and how to
+      #       # configure them.
+      #       <your-exporter-here>:
+      #         ...
+              
+      #     service:
+      #       extensions: [pprof, zpages, health_check]
+      #       pipelines:
+      #         traces:
+      #           receivers: [zipkin]
+      #           # List your exporter here.
+      #           exporters: [<your-exporter-here>,logging]
+  # - name: otel-collector-svc
+  #   type: raw
+  #   properties:
+  #     apiVersion: v1
+  #     kind: Service
+  #     metadata:
+  #       name: otel-collector
+  #       labels:
+  #         app: opencesus
+  #         component: otel-collector
+  #     spec:
+  #       ports:
+  #       - name: zipkin # Default endpoint for Zipkin receiver.
+  #         port: 9411
+  #         protocol: TCP
+  #         targetPort: 9411
+  #       selector:
+  #         component: otel-collector
+  # - name: otel-collector-deploy
+  #   type: raw
+  #   properties:
+  #     apiVersion: apps/v1
+  #     kind: Deployment
+  #     metadata:
+  #       name: otel-collector
+  #       labels:
+  #         app: opentelemetry
+  #         component: otel-collector
+  #     spec:
+  #       replicas: 1  # scale out based on your usage
+  #       selector:
+  #         matchLabels:
+  #           app: opentelemetry
+  #       template:
+  #         metadata:
+  #           labels:
+  #             app: opentelemetry
+  #             component: otel-collector
+  #         spec:
+  #           containers:
+  #           - name: otel-collector
+  #             image: otel/opentelemetry-collector-contrib-dev:latest
+  #             command:
+  #               - "/otelcontribcol"
+  #               - "--config=/conf/otel-collector-config.yaml"
+  #             resources:
+  #               limits:
+  #                 cpu: 1
+  #                 memory: 2Gi
+  #               requests:
+  #                 cpu: 200m
+  #                 memory: 400Mi
+  #             ports:
+  #               - containerPort: 9411 # Default endpoint for Zipkin receiver.
+  #             volumeMounts:
+  #               - name: otel-collector-config-vol
+  #                 mountPath: /conf
+  #             livenessProbe:
+  #               httpGet:
+  #                 path: /
+  #                 port: 13133
+  #             readinessProbe:
+  #               httpGet:
+  #                 path: /
+  #                 port: 13133
+  #           volumes:
+  #             - configMap:
+  #                 name: otel-collector-conf
+  #                 items:
+  #                   - key: otel-collector-config
+  #                     path: otel-collector-config.yaml
+  #               name: otel-collector-config-vol

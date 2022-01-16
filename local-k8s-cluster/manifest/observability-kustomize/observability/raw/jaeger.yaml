@@ -1,0 +1,46 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: jaeger
+spec:
+  components:
+  # for dev/testing/demo
+  - name: jaeger-instance-dev
+    type: raw
+    properties:
+      apiVersion: jaegertracing.io/v1
+      kind: "Jaeger"
+      metadata:
+        name: jaeger
+      spec:
+        strategy: allInOne
+        # ingress:
+        #   enabled: false
+        allInOne:
+          image: jaegertracing/all-in-one:1.22
+          options:
+            query:
+              base-path: /jaeger
+  # for production
+  # - name: jaeger-instance-prod
+  #   type: raw
+  #   properties:
+  #     apiVersion: jaegertracing.io/v1
+  #     kind: "Jaeger"
+  #     metadata:
+  #       name: jaeger
+  #     spec:
+  #       strategy: production
+  #       collector:
+  #         maxReplicas: 5
+  #         resources:
+  #           limits:
+  #             cpu: 100m
+  #             memory: 128Mi
+  #       query:
+  #         base-path: /jaeger
+  #       storage:
+  #         type: elasticsearch
+  #         options:
+  #           es:
+  #             server-urls: http://{your-elastic-search-path}:9200

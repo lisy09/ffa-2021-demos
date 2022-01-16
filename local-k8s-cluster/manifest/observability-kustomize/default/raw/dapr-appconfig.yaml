@@ -1,0 +1,24 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: default-dapr-appconfig
+spec:
+  components:
+  - name: appconfig
+    type: raw
+    properties:
+      apiVersion: dapr.io/v1alpha1
+      kind: Configuration
+      metadata:
+        name: appconfig
+      spec:
+        # observability
+        tracing:
+          samplingRate: "1"
+          zipkin:
+            endpointAddress: "http://my-otel-collector-collector.observability.svc.cluster.local:9411/api/v2/spans"
+        # security
+        mtls:
+          enabled: true
+          workloadCertTTL: "24h"
+          allowedClockSkew: "15m"

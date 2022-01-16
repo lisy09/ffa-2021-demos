@@ -1,0 +1,11 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: jaeger-operator
+spec:
+  components:
+  - name: jaeger-operator
+    type: helm
+    properties:
+      chart: jaeger-operator
+      url: https://jaegertracing.github.io/helm-charts

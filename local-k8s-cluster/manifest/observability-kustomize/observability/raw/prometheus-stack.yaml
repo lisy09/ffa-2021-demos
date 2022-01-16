@@ -1,0 +1,50 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: prometheus-stack
+spec:
+  components:
+  - name: prometheus-stack
+    type: helm
+    properties:
+      chart: kube-prometheus-stack
+      url: https://prometheus-community.github.io/helm-charts
+      # check configuration document using `helm show values prometheus-community/kube-prometheus-stack`
+      # or https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack#configuration
+      values:
+        namespaceOverride: observability
+        alertmanager:
+          ingress:
+            enabled: true
+            ingressClassName: nginx
+            # hosts:
+            # - "*"
+            paths:
+            - /alertmanager/
+          alertmanagerSpec:
+            routePrefix: /alertmanager/
+        grafana:
+          # check docs: https://github.com/grafana/helm-charts/blob/main/charts/grafana/README.md
+          ingress:
+            enabled: true
+            annotations:
+              kubernetes.io/ingress.class: "nginx"
+              nginx.ingress.kubernetes.io/rewrite-target: /$1
+              nginx.ingress.kubernetes.io/use-regex: "true"
+            path: /grafana/?(.*)
+          grafana.ini:
+            server:
+              root_url: http://localhost:3000/grafana # this host can be localhost
+        prometheus:
+          ingress:
+            enabled: true
+            ingressClassName: nginx
+            # annotations:
+            #   nginx.ingress.kubernetes.io/rewrite-target: /$2
+            #   nginx.ingress.kubernetes.io/use-regex: "true"
+            paths:
+            - /prometheus(/|$)(.*)
+            pathType: Prefix
+          prometheusSpec:
+            externalUrl: http://localhost/prometheus
+            routePrefix: /prometheus

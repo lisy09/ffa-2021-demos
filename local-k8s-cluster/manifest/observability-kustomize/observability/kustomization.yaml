@@ -1,0 +1,10 @@
+namespace: observability
+
+resources:
+  - namespace.yaml
+  - raw/jaeger-operator.yaml
+  - raw/otel-operator.yaml
+  - raw/jaeger.yaml
+  - raw/otel-collector.yaml
+  - raw/prometheus-stack.yaml
+  - raw/loki-stack.yaml
