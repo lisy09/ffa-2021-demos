@@ -1,0 +1,16 @@
+gen_static_user_feature_to_hive:
+  catalog_name: myhive
+  default_database: default
+  hive_conf_dir: /opt/hive/conf
+  user_num: 10000 
+copy_static_user_feature_from_hive_to_tidb:
+  catalog_name: myhive
+  default_database: default
+  hive_conf_dir: /opt/hive/conf
+  db_url: tidb://tidb:4000/test
+  db_host: tidb
+  db_port: 4000
+  db_database: test
+  db_username: root
+  db_password: ''
+  db_table_name: TIDB_USER_FEATURES

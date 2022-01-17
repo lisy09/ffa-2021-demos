@@ -1,0 +1,11 @@
+project_name: realtime_bandit
+server_uri: localhost:50051
+blob:
+  blob_manager_class: ai_flow_plugins.blob_manager_plugins.local_blob_manager.LocalBlobManager
+  # blob_manager_class: ai_flow_plugins.blob_manager_plugins.s3_blob_manager.S3BlobManager
+  # blob_manager_config:
+  #   endpoint: flink-ai-flow-minio:9000
+  #   bucket: flink-ai-flow
+  #   access_key: minio
+  #   secret_key: minio123
+  #   local_repository: /tmp/airflow

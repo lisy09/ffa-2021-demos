@@ -1,0 +1,17 @@
+ARG HADOOP_BASE_IMAGE_FULL
+FROM ${HADOOP_BASE_IMAGE_FULL}
+
+ARG HADOOP_NAMENODE_PORT_INTERNAL=9870
+ENV HADOOP_NAMENODE_PORT_INTERNAL=${HADOOP_NAMENODE_PORT_INTERNAL}
+HEALTHCHECK CMD curl -f http://localhost:${HADOOP_NAMENODE_PORT_INTERNAL}/ || exit 1
+
+ENV HDFS_CONF_dfs_namenode_name_dir=file:///hadoop/dfs/name
+RUN mkdir -p /hadoop/dfs/name
+VOLUME /hadoop/dfs/name
+
+ADD run.sh /run.sh
+RUN chmod a+x /run.sh
+
+EXPOSE ${HADOOP_NAMENODE_PORT_INTERNAL}
+
+CMD ["/run.sh"]

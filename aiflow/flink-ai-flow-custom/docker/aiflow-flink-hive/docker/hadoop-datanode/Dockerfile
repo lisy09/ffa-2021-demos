@@ -1,0 +1,17 @@
+ARG HADOOP_BASE_IMAGE_FULL
+FROM ${HADOOP_BASE_IMAGE_FULL}
+
+ARG HADOOP_DATANODE_PORT_INTERNAL=9864
+ENV HADOOP_DATANODE_PORT_INTERNAL=${HADOOP_DATANODE_PORT_INTERNAL}
+HEALTHCHECK CMD curl -f http://localhost:${HADOOP_DATANODE_PORT_INTERNAL}/ || exit 1
+
+ENV HDFS_CONF_dfs_datanode_data_dir=file:///hadoop/dfs/data
+RUN mkdir -p /hadoop/dfs/data
+VOLUME /hadoop/dfs/data
+
+ADD run.sh /run.sh
+RUN chmod a+x /run.sh
+
+EXPOSE ${HADOOP_DATANODE_PORT_INTERNAL}
+
+CMD ["/run.sh"]

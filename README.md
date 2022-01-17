@@ -42,3 +42,9 @@ brew install kind
 make local-k8s
 make local-k8s-undeploy
 ```
+
+## Validating there is an available k8s cluster
+
+```bash
+kubectl get node
+```

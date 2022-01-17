@@ -1,0 +1,6 @@
+version: "3"
+services: 
+  flink-ai-flow-dev:
+    env_file: 
+      - ./env/dev.env
+      - ${CONTEXT_DIR}/hadoop-hive.env

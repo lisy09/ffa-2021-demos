@@ -1,0 +1,164 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+version: "3"
+networks:
+  default:
+    external: true
+    name: app
+
+x-aiflow-common:
+  &aiflow-common
+  image: ${BASE_IMAGE_FULL}
+  # build: .
+  environment:
+    AIFLOW_HOME: /usr/local/aiflow
+    AIRFLOW_HOME: /usr/local/airflow
+    NOTIFICATION_HOME: /usr/local/notification_service
+    AIRFLOW_MYSQL_CONN: mysql://root:${MYSQL_PASSWORD}@flink-ai-flow-base-mysql/aiflow?charset=utf8mb4
+    AIRFLOW_NOTIFICATION_SERVER_URI: flink-ai-flow-base:50052
+  depends_on:
+    redis:
+      condition: service_healthy
+
+services:
+  redis:
+    image: redis:latest
+    # ports:
+    #   - 6379:6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 30s
+      retries: 50
+    restart: always
+
+  flink-ai-flow-base-mysql:
+    image: mysql:8
+    # ports:
+    #   - "3306:3306"
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: airflow
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    restart: always
+  mysql-init:
+    image: mysql:8
+    container_name: mysql-init
+    depends_on: 
+      flink-ai-flow-base-mysql:
+        condition: service_healthy
+    entrypoint: >
+      /bin/bash -c "mysql -h flink-ai-flow-base-mysql -u ${MYSQL_USER} -p${MYSQL_PASSWORD} 
+      -e \"CREATE DATABASE IF NOT EXISTS aiflow CHARACTER SET UTF8mb3 COLLATE utf8_general_ci;
+      set global explicit_defaults_for_timestamp=1;\"
+      "
+
+  flink-ai-flow-base-minio:
+    image: minio/minio
+    container_name: flink-ai-flow-base-minio
+    command:
+      - server
+      - /mnt/data
+    environment:
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+    volumes:
+      - minio-data:/mnt/data
+    ports:
+      - "9000:9000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  flink-ai-flow-base-airflow-worker:
+    <<: *aiflow-common
+    command: /bin/bash -c "
+        init-airflow-with-celery-executor.sh $${AIRFLOW_MYSQL_CONN} $${AIRFLOW_NOTIFICATION_SERVER_URI}
+        && airflow celery worker"
+    # ports:
+    #   - 8793
+    deploy:
+      replicas: 3
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - 'celery --app airflow.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}"'
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    restart: always
+
+  flink-ai-flow-base-flower:
+    <<: *aiflow-common
+    command: /bin/bash -c "
+        init-airflow-with-celery-executor.sh $${AIRFLOW_MYSQL_CONN} $${AIRFLOW_NOTIFICATION_SERVER_URI}
+        && airflow celery flower"
+    # ports:
+    #   - 5555:5555
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:5555/"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    restart: always
+
+  flink-ai-flow-base:
+    <<: *aiflow-common
+    container_name: flink-ai-flow-base
+    volumes:
+      - .:/workspace:cached
+    ports:
+     - "8000:8000"
+     - "8080:8080"
+    environment:
+      AIFLOW_WEB_SERVER_HOST: 0.0.0.0
+    entrypoint: >
+      /bin/bash -c "
+      start-all-aiflow-services.sh mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@flink-ai-flow-base-mysql/aiflow;
+      while sleep 1000; do :; done
+      "
+    depends_on: 
+      mysql-init:
+        condition: service_completed_successfully
+      flink-ai-flow-base-airflow-worker:
+        condition: service_healthy
+
+  flink-ai-flow-base-client:
+    <<: *aiflow-common
+    container_name: flink-ai-flow-base-client
+    # entrypoint: >
+    #   /bin/bash -c '
+    #   sed -i -E "s|server_ip: localhost|server_ip: flink-ai-flow-base|g" ~/examples/s3_blob_manager_project/project.yaml;
+    #   while sleep 1000; do :; done
+    #   '
+    entrypoint: >
+      /bin/bash -c '
+      while sleep 1000; do :; done
+      '
+    depends_on: 
+      - flink-ai-flow-base
+volumes:
+  minio-data:

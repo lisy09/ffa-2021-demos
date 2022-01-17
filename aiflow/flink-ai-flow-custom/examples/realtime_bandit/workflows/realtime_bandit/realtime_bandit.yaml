@@ -1,0 +1,34 @@
+gen_static_user_feature_to_hive:
+  job_type: flink
+  properties:
+      run_mode: cluster
+      flink_run_args:
+        - --jobmanager
+        - flink-jobmanager:8081
+  # periodic_config:
+  #   interval: '0,0,0,60'
+copy_static_user_feature_from_hive_to_tidb:
+  job_type: flink
+  properties:
+      run_mode: cluster
+      flink_run_args:
+        - --jobmanager
+        - flink-jobmanager:8081
+  periodic_config:
+    # cron: '0 0 23 * * * *' # production config, at 23:00:00 everyday
+    interval: '0,0,0,60' 
+
+# train_job:
+#   job_type: python
+
+# eval_job:
+#   job_type: python
+
+# validate_job:
+#   job_type: python
+
+# push_job:
+#   job_type: python
+
+# predict_job:
+#   job_type: python

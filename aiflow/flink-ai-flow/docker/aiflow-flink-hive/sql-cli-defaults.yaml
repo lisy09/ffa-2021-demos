@@ -1,0 +1,10 @@
+execution:
+  planner: blink
+  type: batch
+  current-catalog: myhive
+  result-mode: table
+catalogs:
+  - name: myhive
+    type: hive
+    default-database: default
+    hive-conf-dir: /opt/hive/conf

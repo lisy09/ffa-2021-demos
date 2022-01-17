@@ -1,0 +1,108 @@
+version: "3"
+networks:
+  default:
+    external: true
+    name: app
+services:
+  # start hive part
+  namenode:
+    image: ${HADOOP_NAMENODE_IMAGE_FULL}
+    container_name: namenode
+    volumes:
+      - namenode:/hadoop/dfs/name
+    environment:
+      - CLUSTER_NAME=test
+    env_file:
+      - ./hadoop-hive.env
+    ports:
+      - ${HADOOP_NAMENODE_HTTP_PORT_EXTERNAL}:${HADOOP_NAMENODE_HTTP_PORT_INTERNAL}
+  datanode:
+    image: ${HADOOP_DATANODE_IMAGE_FULL}
+    container_name: datanode
+    volumes:
+      - datanode:/hadoop/dfs/data
+    env_file:
+      - ./hadoop-hive.env
+    environment:
+      SERVICE_PRECONDITION: namenode:${HADOOP_NAMENODE_RPC_PORT}
+    ports:
+      - ${HADOOP_DATANODE_HTTP_PORT_EXTERNAL}:${HADOOP_DATANODE_HTTP_PORT_INTERNAL}
+  hive-metastore-postgresql:
+    container_name: hive-metastore-postgresql
+    image: postgres:13-alpine3.14
+    environment: 
+      POSTGRES_DB: metastore
+      POSTGRES_USER: hive
+      POSTGRES_PASSWORD: hive
+  hive-metastore-init:
+    image: ${HIVE_IMAGE_FULL}
+    container_name: hive-metastore-init
+    env_file:
+      - ./hadoop-hive.env
+    command: /opt/hive/bin/schematool -dbType postgres -initSchema
+    environment:
+      SERVICE_PRECONDITION: hive-metastore-postgresql:5432
+  hive-metastore:
+    image: ${HIVE_IMAGE_FULL}
+    container_name: hive-metastore
+    env_file:
+      - ./hadoop-hive.env
+    command: /opt/hive/bin/hive --service metastore
+    environment:
+      SERVICE_PRECONDITION: namenode:${HADOOP_NAMENODE_RPC_PORT} datanode:${HADOOP_DATANODE_PORT} hive-metastore-postgresql:5432
+    ports:
+      - ${HIVE_THRIFT_PORT}:${HIVE_THRIFT_PORT}
+    depends_on: 
+      hive-metastore-init:
+        condition: service_completed_successfully
+  hive-server:
+    image: ${HIVE_IMAGE_FULL}
+    container_name: hive-server
+    env_file:
+      - ./hadoop-hive.env
+    environment:
+      HIVE_CORE_CONF_javax_jdo_option_ConnectionURL: "jdbc:postgresql://hive-metastore/metastore"
+      SERVICE_PRECONDITION: hive-metastore:${HIVE_THRIFT_PORT}
+    ports:
+      - ${HIVE_SERVER2_WEB_PORT}:${HIVE_SERVER2_WEB_PORT}
+  # presto-coordinator:
+  #   image: shawnzhu/prestodb:0.181
+  #   container_name: presto-coordinator
+  #   ports:
+  #     - "38080:8080"
+  # end hive part
+
+  # start flink part
+  flink-jobmanager:
+    container_name: flink-jobmanager
+    image: ${FLINK_IMAGE_FULL}
+    ports:
+      - "38081:8081"
+    command: jobmanager
+    env_file:
+      - ./hadoop-hive.env
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=flink-jobmanager
+    volumes: 
+      - ./sql-cli-defaults.yaml:/opt/flink/conf/sql-client-defaults.yaml
+  flink-taskmanager:
+    container_name: flink-taskmanager
+    image: ${FLINK_IMAGE_FULL}
+    depends_on:
+      - flink-jobmanager
+    command: taskmanager
+    env_file:
+      - ./hadoop-hive.env
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 5
+        parallelism.default: 2  
+    volumes: 
+      - ./sql-cli-defaults.yaml:/opt/flink/conf/sql-client-defaults.yaml
+  # end flink part
+
+volumes:
+  namenode:
+  datanode:
