@@ -48,3 +48,30 @@ make local-k8s-undeploy
 ```bash
 kubectl get node
 ```
+
+## How to run aiflow demo
+
+```
+cd aiflow/flink-ai-flow
+
+# build dockerimages
+make docker-images
+
+# setup dev cluster with docker-compose
+make dev-deploy
+
+# then docker login to dev container
+docker exec -it flink-ai-flow-dev bash
+
+# start server in container
+start-all-aiflow-server
+
+# run example
+python examples/sklearn_examples/workflows/batch_train_stream_predict/batch_train_stream_predict.py
+
+# check result on webui: localhost:8000 or airflow: localhost:8080
+# check output under examples/sklearn_examples/workflows/batch_train_stream_predict/
+
+# cleanup
+make dev-undeploy
+```
