@@ -1,0 +1,32 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: demo
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: demo
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: demo
+  namespace: default
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo-flink-client
+spec:
+  serviceAccountName: demo
+  containers:
+  - name: demo
+    image: lisy09/flink-on-k8s-demo:0.1
+    command: 
+    - /bin/sh
+    - -c
+    - "while sleep 1000; do :; done"

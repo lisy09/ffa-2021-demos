@@ -4,10 +4,8 @@ This repo summarizes several demos from Flink Forward Asia 2021.
 
 ## demos
 
-- [Native Flink on k8s](.)
-- [AIFlow](.)
-- [Alink](.)
-- [Incremental Training](.)
+- [AIFlow](./aiflow/flink-ai-flow/README.md)
+- [Native Flink on k8s](./native-flink-on-k8s/README.md)
 
 ## Prerequisite
 
